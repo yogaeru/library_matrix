@@ -11,25 +11,28 @@ class helperWrapper:
 
     def __getattr__(self, attr):
         instance = self.__fitur_cls(self.__matrix)
+        # print("dari objek")
         return getattr(instance, attr)
     
 class adjoin:
     def __new__(cls):
         raise NotImplementedError(f"TIDAK BISA MEMBUAT INSTANCE DARI {cls}")
 
+    
     @staticmethod
     def inv(param_matrix) -> list:
-        pass
+        if not isinstance(param_matrix, SetMatrix):
+            raise TypeError("Parameter harus berupa SetMatrix")
+        matrix = param_matrix
     
 """ <=== KOFAKTOR ===>"""
 class kofaktor:
-    # def __new__(cls):
-    #     raise NotImplementedError(f" TIDAK BISA MEMBUAT INSTANCE DARI {cls} ")
+    def __new__(cls):
+        raise NotImplementedError(f" TIDAK BISA MEMBUAT INSTANCE DARI {cls} ")
     
     def __init__(self, obj_matrix):
         self.__obj_matrix = obj_matrix
-        # print(obj_matrix.tolist)
-    
+
     @property
     def getT(self):
         return self.__obj_matrix
@@ -52,7 +55,6 @@ class kofaktor:
         """Loop untuk menghpaus kolom matrix"""
         for i in range(len(minor)):
             minor[i].pop(col)
-
         return SetMatrix.matrix(minor)
     
     """ METHOD UNTUK MENGHITUNG DETERMINAN KOFAKTOR """
@@ -72,16 +74,11 @@ class kofaktor:
             det_result:float
         """
         instance = self.__obj_matrix if pMatrix ==  None else pMatrix
-        # print(instance)
-        print("ini", type(instance))
-        
+
         if not isinstance(instance, SetMatrix):
             raise ValueError(f"{instance} BUKAN OBJEK DARI SetMatrix")
         
-        
         matrix = instance.tolist
-        print(matrix)
-        
         len_matrix = len(matrix) #menentukan panjang matrix
         
         if len_matrix != len(matrix[0]):
@@ -97,9 +94,9 @@ class kofaktor:
         if len_matrix > 2 :
             container_minor = []
             container_text = []
-            print(f"[bold cyan2]Matrix yang sedang dihitung: {depth} [/bold cyan2]") if depth > 0 else None
-            SetMatrix.printMatrix(matrix) if depth == 0 and len_matrix!=3 and opt == "print" or len_matrix == 4 and opt=="print"else None
-            print() if depth == 0 else None
+            print(f"[bold cyan2]Matrix yang sedang dihitung: {depth} [/bold cyan2]") if depth > 0 and opt == "print" else None
+            SetMatrix.printMatrix(instance) if depth == 0 and len_matrix!=3 and opt == "print" or len_matrix == 4 and opt=="print"else None
+            print() if depth == 0 and opt== "print" else None
             container_minor.append(instance) if len_matrix == 3 else None
         
         """CONTAINER UNTUK MENYIMPAN HASIL"""
@@ -111,21 +108,22 @@ class kofaktor:
         
         for i in range(len_matrix):
             matrix_minor = kofaktor.get_minor(instance, 0, i)
-            print(type(matrix_minor))
+            # print(type(matrix_minor))
             container_minor.append(matrix_minor) if len_matrix > 2 else None
             
             cofactor = ((-1)**i) * matrix[0][i]
-            minor_determinant = self.det(matrix_minor, depth + 1)
+            minor_determinant = self.det(matrix_minor, depth + 1, opt= opt)
             result = cofactor * minor_determinant
             det_result+=result
             
             if depth == 0:
-                container_result[0].append(det_result)
+                container_result[0].append(minor_determinant)
                 container_result[1].append(result)
             if depth != 0 or depth == 0 and len_matrix == 3:
                 result_text = f"[yellow1]({cofactor} * {minor_determinant}) = {result} [/yellow1]"
                 container_text.append(result_text)
-                
+        
+
         #KELUAR LOOP
         if len_matrix == 3 and opt == "print":
             SetMatrix.printMatrix(*container_minor) if container_minor else None
@@ -142,20 +140,24 @@ class kofaktor:
             for i in range(len(container_result)):
                 answer = ""
                 for j, result in enumerate(container_result[i]):
-                    temp = f"({matrix[0][i]:.1f} * {result:.1f})" if i==0 else f"{result:.1f}"
+                    cofactor = ((-1)**j) * matrix[0][j]
+                    temp = f"({cofactor:.1f} * {result:.1f})" if i==0 else f"({result:.1f})"
                     answer+= temp + " + " if j!=len(container_result[i]) -1 else temp
                     
                 print(f"[bold yellow1]{answer}[/bold yellow1]")
             print(f"[bold dark_orange]Hasil Akhir = {det_result}[/bold dark_orange]") 
             
-    
-
         return det_result
 
 
 
-"""   CLASS SETMATR"""
+"""   CLASS SETMATRIX"""
 class SetMatrix:
+    kof:kofaktor = object.__new__(kofaktor)
+    kof.__init__(None)
+    
+    adj:adjoin = object.__new__(adjoin)
+    
     __FITUR_MAP = {
         "kof": kofaktor,
         "adj" : adjoin
@@ -165,8 +167,14 @@ class SetMatrix:
         raise TypeError("TIDAK BISA MEMBUAT OBJEK BARU SECARA LANGSUNG")
     
     def __init__(self, matrix):
-        print("instance berhasil dibuat")
+        # print("instance berhasil dibuat")
         self.__matrix = matrix
+    
+    def __getattribute__(self, attr):
+        fitur_map = super().__getattribute__("_SetMatrix__FITUR_MAP")
+        if attr in fitur_map:
+            raise AttributeError
+        return super().__getattribute__(attr)
     
     def __getattr__(self, attr):
         if attr in self.__FITUR_MAP:
@@ -176,17 +184,46 @@ class SetMatrix:
     def __str__(self) -> str:
         return tabulate(self.__matrix, tablefmt="grid", floatfmt=".1f")
     
+    
+    """ 
+        <====KUMPULAN PROPERTY CLASS ===>
+    """
     @property
     def tolist(self):
         """GETTER UNTUK MENDAPATKAN MATRIX YANG PRIVATE"""
         return self.__matrix
+        
+        
+    @property
+    def adjoin(self) -> "SetMatrix":
+        matrix = SetMatrix.matrix(self.__matrix)
+        inv_matrix = []
+        even = lambda x: x%2==0
+        isnum = lambda x: x.is_integer()
+        
+        for i in range(len(matrix.tolist)):
+            row_data = []
+            for j in range(len(matrix.tolist)):
+                matrix_minor = kofaktor.get_minor(matrix, i, j)
+                det_matrix = matrix_minor.kof.det()
+                data = det_matrix
+                if not even(i) and even(j) or even(i) and not even(j):
+                    data *= (-1)
+                if isnum(data):
+                    data = int(data)
+
+                row_data.append(data)
+                
+            inv_matrix.append(row_data)
+
+        return SetMatrix.matrix(inv_matrix)
     
     @property
     def T(self):
         """GETTER UNTUK MENDAPATKAN TRANSPOS MATRIX"""
-        transpose = self.__matrix.tolist
-        transpose = [row for row in zip(*transpose)]
-        return transpose
+        transpose = self.__matrix
+        transpose = [list(row) for row in zip(*transpose)]
+        return SetMatrix.matrix(transpose)
     
     """METHOD UNTUK MEMBUAT OBJEK MATRIX """
     @classmethod
@@ -194,6 +231,11 @@ class SetMatrix:
         instance: SetMatrix = super().__new__(cls)
         instance.__init__(matrix)
         return instance
+    
+    
+    """
+        <==== KUMPULAN METHOD DARI CLASS ===>
+    """
     
     """METHOD UNTUK PRINT MATRIX DENGAN PARAMETER ARGS"""
     @staticmethod
@@ -229,7 +271,7 @@ class SetMatrix:
                 for j in range (col):
                     if i < row:
                         value_matrix = matrix.tolist[i][j]
-                        if isinstance(value_matrix, (int, float) ) :
+                        if isinstance(value_matrix, (int) ) :
                             format_num = str(float(value_matrix))
                             row_data.append(format_num)
                         else:
@@ -296,16 +338,30 @@ def main() -> None:
     ]
 
     B = [
+        [1, 2, 4,6],
+        [11, 2, 8 ,3],
+        [-2, -2, 6, 2],
+        [1, 1, 8, -3],
+    ]
+    
+    E = [
         [1, 2, 3],
         [4, 5, 6],
         [7, 8, 9]
     ]
 
-    mtr = SetMatrix.matrix(A)
+    # mtr = SetMatrix.matrix(A)
     mtr2 = SetMatrix.matrix(B)
+    # mtr3 = SetMatrix.matrix(E)
+    # tranpose = mtr2.T
+
+    adj = mtr2.adjoin
+    print(adj)
     
-    print(type(mtr2))
-    print (mtr2.Tps)
+    
+    # print(type(mtr2))
+    # print(mtr2.tolist)
+    # print (mtr2.T)
     
 if __name__ == "__main__":
     main()
