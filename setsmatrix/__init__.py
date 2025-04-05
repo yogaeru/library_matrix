@@ -1,1 +1,1 @@
-from .modul1 import SetMatrix
+from .newModul import SetMatrix, adjoin
