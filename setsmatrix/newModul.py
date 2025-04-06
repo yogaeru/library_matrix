@@ -1,33 +1,66 @@
-import numpy as np
 import collections
 from fractions import Fraction as frc
 from tabulate import tabulate
 from rich import print
 
+
+"""
+    <== FUNCTION HELPER ==>
+"""
 class helperWrapper:
-    def __init__(self, matrix, fitur):
+    def __init__(self, matrix:"SetMatrix", fitur:str):
         self.__matrix = matrix
         self.__fitur_cls = fitur
 
     def __getattr__(self, attr):
-        instance = self.__fitur_cls(self.__matrix)
+        instance = object.__new__(self.__fitur_cls)
+        instance.__init__(self.__matrix)
         # print("dari objek")
         return getattr(instance, attr)
-    
-class adjoin:
-    def __new__(cls):
-        raise NotImplementedError(f"TIDAK BISA MEMBUAT INSTANCE DARI {cls}")
 
+
+"""
+    <=== ADJOIN ===>
+"""
+class adjoin:
+    def __new__(cls, *agrs, **kwargs):
+        raise TypeError(f"TIDAK BISA MEMBUAT INSTANCE DARI {cls}")
+
+    def __init__(self, obj_matrix):
+        self.__obj_matrix = obj_matrix
     
-    @staticmethod
-    def inv(param_matrix) -> list:
-        if not isinstance(param_matrix, SetMatrix):
+    def inv(self, *, mtr:"SetMatrix" = None) -> "SetMatrix":
+        
+        matrix = self.__obj_matrix if mtr is None else mtr
+        if not isinstance(matrix, SetMatrix):
             raise TypeError("Parameter harus berupa SetMatrix")
-        matrix = param_matrix
-    
-""" <=== KOFAKTOR ===>"""
+        
+        inv_matrix = []
+        print(matrix.adjoin.tolist)
+        list_matrix = matrix.adjoin.T.tolist
+        print (list_matrix)
+        len_matrix = len(list_matrix)
+        det_matrix = 1 / matrix.kof.det()
+        print(f"{det_matrix:.2f}")
+        if det_matrix == 0:
+            raise ValueError("Matrix dengan determinan 0 tidak bisa dicari inversnya")
+        
+        
+        for i in range(len_matrix):
+            row_data = []
+            for j in range(len_matrix):
+                data = list_matrix[i][j] * det_matrix
+                row_data.append(data)
+            inv_matrix.append(row_data)
+            
+        return SetMatrix.matrix(inv_matrix)
+
+
+"""
+    <=== KOFAKTOR ===>
+"""
 class kofaktor:
-    def __new__(cls):
+    def __new__(cls, *args, **kwargs):
         raise NotImplementedError(f" TIDAK BISA MEMBUAT INSTANCE DARI {cls} ")
     
     def __init__(self, obj_matrix):
@@ -58,7 +91,7 @@ class kofaktor:
         return SetMatrix.matrix(minor)
     
     """ METHOD UNTUK MENGHITUNG DETERMINAN KOFAKTOR """
-    def det(self, pMatrix:"SetMatrix" = None , depth= 0,*, opt:str=None) -> float:
+    def det(self, *, pMatrix:"SetMatrix" = None , depth= 0, opt:str= None ) -> float:
         """
             --------------------
             #INFO NAMA VARIABEL#
@@ -73,6 +106,8 @@ class kofaktor:
             RETURN
             det_result:float
         """
+        
+        
         instance = self.__obj_matrix if pMatrix ==  None else pMatrix
 
         if not isinstance(instance, SetMatrix):
@@ -112,7 +147,7 @@ class kofaktor:
             container_minor.append(matrix_minor) if len_matrix > 2 else None
             
             cofactor = ((-1)**i) * matrix[0][i]
-            minor_determinant = self.det(matrix_minor, depth + 1, opt= opt)
+            minor_determinant = self.det ( pMatrix=matrix_minor, depth= depth + 1, opt= opt )
             result = cofactor * minor_determinant
             det_result+=result
             
@@ -151,13 +186,13 @@ class kofaktor:
 
 
 
-"""   CLASS SETMATRIX"""
+"""   
+    <=== CLASS SETMATRIX ===>
+"""
 class SetMatrix:
     kof:kofaktor = object.__new__(kofaktor)
-    kof.__init__(None)
-    
     adj:adjoin = object.__new__(adjoin)
-    
+
     __FITUR_MAP = {
         "kof": kofaktor,
         "adj" : adjoin
@@ -193,7 +228,7 @@ class SetMatrix:
         """GETTER UNTUK MENDAPATKAN MATRIX YANG PRIVATE"""
         return self.__matrix
         
-        
+
     @property
     def adjoin(self) -> "SetMatrix":
         matrix = SetMatrix.matrix(self.__matrix)
@@ -211,11 +246,9 @@ class SetMatrix:
                     data *= (-1)
                 if isnum(data):
                     data = int(data)
-
                 row_data.append(data)
-                
             inv_matrix.append(row_data)
-
+            
         return SetMatrix.matrix(inv_matrix)
     
     @property
@@ -326,7 +359,6 @@ class SetMatrix:
 
 
 
-
 """UNIT TESTING"""
 def main() -> None:
     A = [
@@ -350,18 +382,7 @@ def main() -> None:
         [7, 8, 9]
     ]
 
-    # mtr = SetMatrix.matrix(A)
-    mtr2 = SetMatrix.matrix(B)
-    # mtr3 = SetMatrix.matrix(E)
-    # tranpose = mtr2.T
 
-    adj = mtr2.adjoin
-    print(adj)
-    
-    
-    # print(type(mtr2))
-    # print(mtr2.tolist)
-    # print (mtr2.T)
     
 if __name__ == "__main__":
     main()
