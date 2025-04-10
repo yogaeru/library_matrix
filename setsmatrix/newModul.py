@@ -71,7 +71,7 @@ class kofaktor:
     @property
     def getT(self):
         return self.__obj_matrix
-    
+    #
     @staticmethod
     def get_minor(matrix, row, col) -> "SetMatrix":
         if not isinstance(matrix, SetMatrix):
