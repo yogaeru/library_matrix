@@ -2,18 +2,34 @@ import numpy as np
 from fractions import Fraction as frc
 from tabulate import tabulate
 from rich import print
+from abc import ABC, abstractmethod
 
+
+# class kofaktor:
+#     pass
 
 class SetMatrix:
+    def __new__(cls, matrix):
+        raise TypeError("Tidak bisa membuat objek baru secara langsung")
+    
     def __init__(self, matrix):
-        pass
+        # self.det_kofaktor = kofaktor()
+        self.__matrix = matrix
+    
+    @classmethod
+    def matrix(cls, matrix) -> object:
+        instance = super().__new__(cls)
+        instance.__init__(matrix)
+        return instance
+        # return cls(matrix)
 
     @staticmethod
-    def printMatrix(*matrix):
+    def printMatrix(*matrix) -> None:
         matrix_container = []
         max_row = max(len(m) for m in matrix)
         min_row = min(len(m) for m in matrix)
-
+        # print(max_row, min_row)
+        
         for mtr in matrix:
             row, col= len(mtr), len(mtr[0])
             new_matrix = []
@@ -34,14 +50,20 @@ class SetMatrix:
         len_coantiner, len_matrix = len(matrix_container), len(matrix_container[0])
 
         if max_row!=min_row:
+            # print (matrix_container)
             for i in range(len_coantiner):
                 leng = len(matrix_container[i])
-                for j in range(len(matrix_container[i])):
+                # print("ini leng", leng)
+                for j in range(leng):
+                    # print("ini j ", j, end=" ")
                     if "px" in matrix_container[i][j]: #jika ada "px" maka ganti dengan whitespace
-                        row = len_matrix - min_row
+                        counter = sum([2 for _ in range(max_row-min_row)])
+                        # print("ini count", counter)
+                        row = len_matrix - counter
+                        # print("ini row", row)
                         for k in range(row, leng):
                             matrix_container[i][k] = " "
-
+                        break
 
         combined_table = ["    ".join(mtr) for mtr in zip(*matrix_container)]
         print(f"[bold]{"\n".join(combined_table)}[/bold]")
@@ -60,7 +82,7 @@ class SetMatrix:
 
 
     @staticmethod
-    def det_kofaktor(matrix, depth=0):
+    def det_kofaktor(matrix, depth=0) -> float:
         len_matrix = len(matrix)
         
         if len_matrix == 1:
@@ -117,3 +139,50 @@ class SetMatrix:
             print(f"[bold dark_orange]Hasil Akhir = {det_result}[/bold dark_orange]") 
 
         return det_result
+
+
+    @staticmethod
+    def inv_adjoin(matrix)->list[float]:
+        len_matrix = len(matrix)
+        
+        container_matrix = []
+        matrix_adjoin = []
+        
+        even = lambda num: num%2==0
+        
+        for i in range(len_matrix):
+            row_data = []
+            row = i+1
+            print(f"even row {row} {even(row)}")
+            for j in range(len_matrix):
+                col = j+1
+                print("even col",col ,even(col))
+                matrix_minor = SetMatrix.get_Minor(matrix, i, j)
+                det_minor = str(frc(SetMatrix.det_kofaktor(matrix_minor) * (-1) if not even(row) and even(col) or even(row) and not even(col)
+                                    else SetMatrix.det_kofaktor(matrix_minor)))
+                # print("ini fungsi", SetMatrix.det_kofaktor(matrix_minor))
+                print(f"Ini det minor {det_minor}")
+                row_data.append(det_minor)
+            matrix_adjoin.append(row_data)
+
+        print(matrix_adjoin)
+        
+
+A = [
+    [2, 8, -1, -2, 9],
+    [4, 16, -2, -4, -18],
+    [1, 2, 3, 4, 5],
+    [4, -2, 1, 2, 1]
+
+]
+sm = SetMatrix.matrix(A)
+det = sm.det_kofaktor(A)
+
+# B = [
+#     [1, 2, 3, 4],
+#     [5, 6, 7, 8],
+#     [9, 10, 11, 12],
+#     [13, 14, 15, 16]
+# ]
+
+# sm.printMatrix(B, A)
