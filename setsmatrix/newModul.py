@@ -33,18 +33,20 @@ class adjoin:
         
         matrix = self.__obj_matrix if mtr is None else mtr
         if not isinstance(matrix, SetMatrix):
-            raise TypeError("Parameter harus berupa SetMatrix")
+            raise TypeError("Parameter harus berupa SetMatrix")    
         
+        container_matrix = []
         inv_matrix = []
+        
         print(matrix.adjoin.tolist)
-        list_matrix = matrix.adjoin.T.tolist
+        list_matrix = matrix.adjoin.tolist
         print (list_matrix)
         len_matrix = len(list_matrix)
         det_matrix = 1 / matrix.kof.det()
         print(f"{det_matrix:.2f}")
+        
         if det_matrix == 0:
             raise ValueError("Matrix dengan determinan 0 tidak bisa dicari inversnya")
-        
         
         for i in range(len_matrix):
             row_data = []
@@ -71,7 +73,7 @@ class kofaktor:
         return self.__obj_matrix
     
     @staticmethod
-    def get_minor(matrix, row, col) -> list:
+    def get_minor(matrix, row, col) -> "SetMatrix":
         if not isinstance(matrix, SetMatrix):
             raise ValueError(f"{matrix} BUKAN OBJEK DARI SetMatrix")
         
@@ -107,7 +109,6 @@ class kofaktor:
             det_result:float
         """
         
-        
         instance = self.__obj_matrix if pMatrix ==  None else pMatrix
 
         if not isinstance(instance, SetMatrix):
@@ -120,7 +121,7 @@ class kofaktor:
             raise ValueError("BARIS DAN KOLOM MATRIX HARUS SAMA")
 
         if len_matrix == 1:
-            return matrix[0]
+            return matrix[0][0]
         if len_matrix == 2:
             det = (matrix[0][0] * matrix[1][1]) - (matrix[0][1] * matrix[1][0])
             return det
@@ -147,15 +148,15 @@ class kofaktor:
             container_minor.append(matrix_minor) if len_matrix > 2 else None
             
             cofactor = ((-1)**i) * matrix[0][i]
-            minor_determinant = self.det ( pMatrix=matrix_minor, depth= depth + 1, opt= opt )
+            minor_determinant = self.det ( pMatrix=matrix_minor, depth= depth + 1, opt = opt )
             result = cofactor * minor_determinant
-            det_result+=result
+            det_result+=float(result)
             
             if depth == 0:
                 container_result[0].append(minor_determinant)
                 container_result[1].append(result)
             if depth != 0 or depth == 0 and len_matrix == 3:
-                result_text = f"[yellow1]({cofactor} * {minor_determinant}) = {result} [/yellow1]"
+                result_text = f"[yellow1]({cofactor:.2f} * {minor_determinant:.2f}) = {result:.2f} [/yellow1]"
                 container_text.append(result_text)
         
 
@@ -168,7 +169,7 @@ class kofaktor:
             """
             for i, result in enumerate(container_text):
                 print(f"{i+1}. {result}")
-            print(f"[green1]Determinan minor saat ini = {det_result} [/green1]\n")
+            print(f"[green1]Determinan minor saat ini = {det_result:.2f} [/green1]\n")
 
         if depth == 0 and opt == "print":
             print("[bold dark_slate_gray2]<========== DETERMINAN AKHIR =========>[/bold dark_slate_gray2]")
@@ -180,9 +181,9 @@ class kofaktor:
                     answer+= temp + " + " if j!=len(container_result[i]) -1 else temp
                     
                 print(f"[bold yellow1]{answer}[/bold yellow1]")
-            print(f"[bold dark_orange]Hasil Akhir = {det_result}[/bold dark_orange]") 
+            print(f"[bold dark_orange]Hasil Akhir = {det_result:.2f}[/bold dark_orange]") 
             
-        return det_result
+        return float(det_result)
 
 
 
@@ -221,7 +222,7 @@ class SetMatrix:
     
     
     """ 
-        <====KUMPULAN PROPERTY CLASS ===>
+        <==== KUMPULAN PROPERTY CLASS ===>
     """
     @property
     def tolist(self):
@@ -229,26 +230,38 @@ class SetMatrix:
         return self.__matrix
         
 
-    @property
-    def adjoin(self) -> "SetMatrix":
+    
+    def adjoin(self, *, mode:str = None) -> "SetMatrix":
         matrix = SetMatrix.matrix(self.__matrix)
         inv_matrix = []
         even = lambda x: x%2==0
         isnum = lambda x: x.is_integer()
         
+        container_matrix = [] #if mode == "print" else None
+        
         for i in range(len(matrix.tolist)):
+            container_minor = []
             row_data = []
             for j in range(len(matrix.tolist)):
                 matrix_minor = kofaktor.get_minor(matrix, i, j)
+                container_minor.append(matrix_minor)
+                
                 det_matrix = matrix_minor.kof.det()
+                # row_data.append(det_matrix)
+                
                 data = det_matrix
                 if not even(i) and even(j) or even(i) and not even(j):
                     data *= (-1)
                 if isnum(data):
                     data = int(data)
                 row_data.append(data)
+            container_minor.append(SetMatrix.matrix([row_data]))
+            SetMatrix.printMatrix(*container_minor)
             inv_matrix.append(row_data)
             
+        # print(container_matrix)
+        SetMatrix.printMatrix(SetMatrix.matrix(inv_matrix)) if mode == "print" else None
+        # print(inv_matrix)
         return SetMatrix.matrix(inv_matrix)
     
     @property
@@ -321,26 +334,25 @@ class SetMatrix:
             """
             table_matrix = tabulate(new_matrix, tablefmt="grid", floatfmt=".1f").split("\n")
             #membuat whitespace sepanjang jumlah elemen pada baris
-            ws = " " * (len(table_matrix[0]) - 6) # -6 dari "matrix"
+            ws = " " * (len(table_matrix[0]) - 5) # -6 dari "matrix"
             
             """MENAMBAHKAN HEADER PADA TABEL MATRIX
             """
-            table_matrix.insert(0, "[bold green1]Matrix[/bold green1]" + ws if len(matrix.tolist) >=3 
+            table_matrix.insert(0, "[bold green1]Matrix[/bold green1]" + ws + " " if len(matrix.tolist) >=3 
                                 else "[bold green1]Minor[/bold green1]" + ws) 
             container_matrix.append(table_matrix)
 
         #keluar loop
         """
-            MENENTUKAN PANJANG CONTIANER MATRIX DAN
-            BANYAKNYA ELEMEN PADA BARIS MATRIX
+            MENENTUKAN PANJANG CONTIANER MATRIX
         """
         len_container = len(container_matrix)
-        len_rowtr = len(container_matrix[0])
         
         """
             LOOP UNTUK MEMBUAT MANIPULASI TABEL MATRIX AGAR BISA
             DIPRINT WALAU UKURANNYA BERBEDA BEDA
         """
+        # print(container_matrix)
         if max_row!=min_row: #jika tidak sama berarti ukuran matrix berbeda beda
             for i in range(len_container):
                 leng = len(container_matrix[i]) #mengambil jumlah baris
@@ -351,7 +363,7 @@ class SetMatrix:
                         for k in range(j, leng):
                             container_matrix[i][k] = " " * len(container_matrix[i][1])
                         break
-        
+        # print([row for row in zip(*container_matrix)])
         """ PRINT MATRIX """
         combined_table = ["   ".join(row_matrix) for row_matrix in zip(*container_matrix)]
         combined_table = "\n".join(combined_table)
