@@ -18,6 +18,86 @@ class helperWrapper:
         # print("dari objek")
         return getattr(instance, attr)
 
+"""
+    <=== GAUSS ===>
+"""
+class Gauss:
+    def __new__(cls, *args, **kwargs):
+        raise TypeError(f"Tidak bisa membuat instance dari class {cls.__name__}")
+        
+    def __init__(self, obj_mtr):
+        self.__obj_mtr = obj_mtr
+
+    def det(self, *, mtr:"SetMatrix" = None, mode:str = None) -> float:
+        """
+        Ini adalah method untuk menghitung determinan menggunakan metode eliminasi gauss
+            <= Parameter =>
+                - mtr:"Setmatrix" =  parameter matrix yang menerima tipe data "SetMatrix"
+                - mode:str = mau pakai mode apa, ada print dan return(default)
+                
+            RETURN FLOAT
+        """
+        #instance akan meyimpan objek dari class SetMatrix
+        instance = self.__obj_mtr if mtr == None else mtr
+        if not isinstance(instance, SetMatrix):
+            raise TypeError("Matrix harus berupa class SetMatrix")
+        
+        """
+            Pada loop dibawah akan membuat copy dari matrix utama
+            sehingga matrix utama tidak berubah
+        """
+        contianer_matrix = []
+        matrix = [] #list untuk menyimpan matrix baru
+        for row in instance.tolist:
+            matrix.append(row.copy()) #pakai copy agar membuat alamat baru
+        len_matrix = len(matrix) #mengambil panjang matrix
+        
+        swap_count = 0 #menampung jumlah pertukaran baris
+        
+        for pivot_row in range(len_matrix):
+            
+            pivot = matrix[i][i] #pivot saat ini
+            
+            if pivot == 0: #jika elemen pivot 0 maka ubah barisnya
+                for row_bot in range(pivot_row + 1, len_matrix):
+                    if matrix[row_bot][row_bot] != 0:
+                        matrix[pivot_row], matrix[row_bot] = matrix[row_bot], matrix[pivot_row]
+                        swap_count+=1
+                        break
+                else:
+                    # SetMatrix.printMatrix(SetMatrix.matrix(matrix))
+                    # print(f"Semua elemen pada baris ke {i+1} sama dengan 0 -> determinan 0")
+                    return 0
+        
+            for row_bot in range(pivot_row + 1, len_matrix):
+                ratio = matrix[row_bot][pivot_row] / pivot
+                for col in range(i, len_matrix):
+                    matrix[row_bot][col] -= ratio * matrix[pivot_row][col]
+                
+        #KELUAR LOOP
+        """
+            Jika ada perubahan maka determinan akan dikalikan dengan -1
+                <= Nama Variabel =>
+                - det = untuk menampung hasil determinan
+                - swap_count = untuk menampung jumlah perubahan baris
+                    - jika swapcount ganjil maka det akan negatif
+                    - jika swapcount genap maka det akan positif
+
+                Loop dibawah digunakan untuk mengalikan elemen diagonal matrix
+        """
+        det = -1 if swap_count % 2 != 0 else 1
+        for i in range(len_matrix): #kalian elemen diagonaln untuk mendapatkan determinan
+            det*=matrix[i][i]
+
+        print(SetMatrix.matrix(matrix)) if mode == "print" else None
+        return float(det)
+    
+    """ METHOD UNTUK MENGHITUNG INVERSE DENGAN METODE GAUSS """
+    def inv (self, *, mtr:"SetMatrix" = None, mode:str = None) -> "SetMatrix" :
+        pass
+    
+    
+    
 
 """
     <=== ADJOIN ===>
@@ -26,24 +106,26 @@ class adjoin:
     def __new__(cls, *agrs, **kwargs):
         raise TypeError(f"TIDAK BISA MEMBUAT INSTANCE DARI {cls}")
 
+
     def __init__(self, obj_matrix):
         self.__obj_matrix = obj_matrix
     
     def inv(self, *, mtr:"SetMatrix" = None) -> "SetMatrix":
         
         matrix = self.__obj_matrix if mtr is None else mtr
+        
         if not isinstance(matrix, SetMatrix):
             raise TypeError("Parameter harus berupa SetMatrix")    
         
         container_matrix = []
         inv_matrix = []
         
-        print(matrix.adjoin.tolist)
-        list_matrix = matrix.adjoin.tolist
-        print (list_matrix)
+        # print(matrix.adjoin().tolist)
+        list_matrix = matrix.adjoin().T.tolist
+        # print (list_matrix)
         len_matrix = len(list_matrix)
-        det_matrix = 1 / matrix.kof.det()
-        print(f"{det_matrix:.2f}")
+        det_matrix = 1 / matrix.gauss.det()
+        # print(f"{det_matrix:.2f}")
         
         if det_matrix == 0:
             raise ValueError("Matrix dengan determinan 0 tidak bisa dicari inversnya")
@@ -64,7 +146,7 @@ class adjoin:
 class kofaktor:
     def __new__(cls, *args, **kwargs):
         raise NotImplementedError(f" TIDAK BISA MEMBUAT INSTANCE DARI {cls} ")
-    
+    #
     def __init__(self, obj_matrix):
         self.__obj_matrix = obj_matrix
 
@@ -193,10 +275,12 @@ class kofaktor:
 class SetMatrix:
     kof:kofaktor = object.__new__(kofaktor)
     adj:adjoin = object.__new__(adjoin)
+    gauss:Gauss = object.__new__(Gauss)
 
     __FITUR_MAP = {
         "kof": kofaktor,
-        "adj" : adjoin
+        "adj" : adjoin,
+        "gauss" : Gauss
     }
     
     def __new__(cls, matrix):
@@ -237,7 +321,7 @@ class SetMatrix:
         even = lambda x: x%2==0
         isnum = lambda x: x.is_integer()
         
-        container_matrix = [] #if mode == "print" else None
+        container_matrix = [] if mode == "print" else None
         
         for i in range(len(matrix.tolist)):
             container_minor = []
@@ -246,21 +330,22 @@ class SetMatrix:
                 matrix_minor = kofaktor.get_minor(matrix, i, j)
                 container_minor.append(matrix_minor)
                 
-                det_matrix = matrix_minor.kof.det()
+                det_matrix = matrix_minor.gauss.det()
                 # row_data.append(det_matrix)
                 
                 data = det_matrix
                 if not even(i) and even(j) or even(i) and not even(j):
                     data *= (-1)
-                if isnum(data):
-                    data = int(data)
-                row_data.append(data)
+                # if isnum(data):
+                #     data = int(data)
+                # # data = f"{da"
+                row_data.append(float(data))
             container_minor.append(SetMatrix.matrix([row_data]))
-            SetMatrix.printMatrix(*container_minor)
+            SetMatrix.printMatrix(*container_minor) if mode == "print" else None
             inv_matrix.append(row_data)
             
         # print(container_matrix)
-        SetMatrix.printMatrix(SetMatrix.matrix(inv_matrix)) if mode == "print" else None
+        # SetMatrix.printMatrix(SetMatrix.matrix(inv_matrix)) if mode == "print" else None
         # print(inv_matrix)
         return SetMatrix.matrix(inv_matrix)
     
@@ -285,7 +370,7 @@ class SetMatrix:
     
     """METHOD UNTUK PRINT MATRIX DENGAN PARAMETER ARGS"""
     @staticmethod
-    def printMatrix(*args):
+    def printMatrix(*args, mode:str = None):
         """ 
             CEK APAKAH ARGUMEN YANG DIBERIKAN ADALAH OBJEK DARI SETMATRIX
         """
@@ -316,23 +401,30 @@ class SetMatrix:
                 row_data = [] #data baris baru
                 for j in range (col):
                     if i < row:
-                        value_matrix = matrix.tolist[i][j]
-                        if isinstance(value_matrix, (int) ) :
-                            format_num = str(float(value_matrix))
-                            row_data.append(format_num)
+                        value_matrix:float = float(matrix.tolist[i][j])
+                        if mode == "frc" :
+                            if value_matrix.is_integer():
+                                row_data.append(str(value_matrix))
+                            else:
+                                format_num = str(frc(value_matrix).limit_denominator(100))
+                                row_data.append(format_num)
                         else:
-                            format_num = str(frc(value_matrix).limit_denominator(100))
+                            format_num = f"{value_matrix:.4g}"
                             row_data.append(format_num)
                     else:
                         value_matrix = "px" #jika tidak ada data maka isi dengan px
                         row_data.append(value_matrix)
                 new_matrix.append(row_data)
+            # print(new_matrix)
 
             """
                 MEMBUAT TABEL MATRIX DENGAN TABULATE YANG 
                 KEMUDIAN DI SETOR KE CONTAINER MATRIX
             """
-            table_matrix = tabulate(new_matrix, tablefmt="grid", floatfmt=".1f").split("\n")
+            if mode == "frc":
+                table_matrix = tabulate(new_matrix, tablefmt="grid", floatfmt=".1f").split("\n")
+            else:
+                table_matrix = tabulate(new_matrix, tablefmt="grid").split("\n")
             #membuat whitespace sepanjang jumlah elemen pada baris
             ws = " " * (len(table_matrix[0]) - 5) # -6 dari "matrix"
             
@@ -364,6 +456,7 @@ class SetMatrix:
                             container_matrix[i][k] = " " * len(container_matrix[i][1])
                         break
         # print([row for row in zip(*container_matrix)])
+        # print(container_matrix)
         """ PRINT MATRIX """
         combined_table = ["   ".join(row_matrix) for row_matrix in zip(*container_matrix)]
         combined_table = "\n".join(combined_table)
