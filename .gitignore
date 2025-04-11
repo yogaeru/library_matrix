@@ -5,4 +5,5 @@ setsmatrix.egg-info/
 setsmatrix/__pycache__/
 setsmatrix/modul1.py
 tempCodeRunnerFile.py
-.obe.py
+obe.py
+.gitignore
