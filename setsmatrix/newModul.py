@@ -46,6 +46,7 @@ class Gauss:
             Pada loop dibawah akan membuat copy dari matrix utama
             sehingga matrix utama tidak berubah
         """
+        
         contianer_matrix = []
         matrix = [] #list untuk menyimpan matrix baru
         for row in instance.tolist:
@@ -55,12 +56,18 @@ class Gauss:
         swap_count = 0 #menampung jumlah pertukaran baris
         
         for pivot_row in range(len_matrix):
+            SetMatrix.printMatrix(SetMatrix.matrix(matrix), type="frc", header=True) if mode == "print" else None
             
-            pivot = matrix[i][i] #pivot saat ini
+            contianer_result = [
+                [],
+                []
+            ]
+            
+            pivot = matrix[pivot_row][pivot_row] #pivot saat ini
             
             if pivot == 0: #jika elemen pivot 0 maka ubah barisnya
                 for row_bot in range(pivot_row + 1, len_matrix):
-                    if matrix[row_bot][row_bot] != 0:
+                    if matrix[row_bot][pivot_row] != 0:
                         matrix[pivot_row], matrix[row_bot] = matrix[row_bot], matrix[pivot_row]
                         swap_count+=1
                         break
@@ -68,12 +75,22 @@ class Gauss:
                     # SetMatrix.printMatrix(SetMatrix.matrix(matrix))
                     # print(f"Semua elemen pada baris ke {i+1} sama dengan 0 -> determinan 0")
                     return 0
-        
+            count = 1
             for row_bot in range(pivot_row + 1, len_matrix):
+            
                 ratio = matrix[row_bot][pivot_row] / pivot
-                for col in range(i, len_matrix):
+                for col in range(pivot_row, len_matrix):
+                    result_text = f"[yellow1]{count}.  ({matrix[row_bot][col]:.1f}) - ({frc(ratio).limit_denominator(1000)}) * {matrix[pivot_row][col]:.1f}[/yellow1]"
                     matrix[row_bot][col] -= ratio * matrix[pivot_row][col]
-                
+                    contianer_result[0].append(result_text)
+                    contianer_result[1].append(f"{frc(matrix[row_bot][col]).limit_denominator(1000)}")
+                    count+=1
+            count =1
+            
+            if mode == "print":
+                for text, result in zip(*contianer_result):
+                    print(f"{text} = {result}")
+                print()
         #KELUAR LOOP
         """
             Jika ada perubahan maka determinan akan dikalikan dengan -1
@@ -89,14 +106,96 @@ class Gauss:
         for i in range(len_matrix): #kalian elemen diagonaln untuk mendapatkan determinan
             det*=matrix[i][i]
 
-        print(SetMatrix.matrix(matrix)) if mode == "print" else None
-        return float(det)
+        # print(SetMatrix.matrix(matrix)) if mode == "print" else None
+        return float(f"{det:.1f}")
+    
+    
+    
     
     """ METHOD UNTUK MENGHITUNG INVERSE DENGAN METODE GAUSS """
     def inv (self, *, mtr:"SetMatrix" = None, mode:str = None) -> "SetMatrix" :
-        pass
-    
-    
+        """
+            Invers dengan metode Gauss-Jordan
+            <= Parameter =>
+                -mtr:"SetMatrix = objek dari class SetMatrix
+                -mode:str = mode untuk menampilkan prosesnya atau tidak
+        """
+        
+        instance = self.__obj_mtr if mtr == None else mtr
+        if not isinstance(instance, SetMatrix):
+            raise TypeError("Input instance harus objek dari class SetMatrix")
+        
+        matrix = instance.tolist
+        len_matrix = len(matrix)
+        identity = SetMatrix.identity(len_matrix)
+        
+        combined_matrix = [a + b for a,b in zip(matrix, identity)]
+        # print(combined_matrix)
+        SetMatrix.printMatrix(SetMatrix.matrix(combined_matrix), type="frc")
+        
+        for i in range(len_matrix):
+            pivot = combined_matrix[i][i]
+            container_result = [
+                [],
+                []
+            ]
+            
+            if pivot == 0:
+                for k in range(i+1, len_matrix):
+                    if combined_matrix[k][i] != 0:
+                        combined_matrix[i], combined_matrix[k] = combined_matrix[k], combined_matrix[i]
+                        pivot = combined_matrix[i][i]
+                        break
+                else:
+                    raise ValueError("Matrix tidak bisa diinvers (pivot nol di semua baris)")
+            
+            for col in range(len(combined_matrix[i])):
+                result = str(frc(combined_matrix[i][col] / pivot).limit_denominator(100))
+                result_text = f"[yellow1]{col+1}. {combined_matrix[i][col]:.2f} / ({pivot:.2f}) = {result} [/yellow1]"
+                container_result[0].append(result_text)
+                container_result[1].append(result)
+                combined_matrix[i][col] /= pivot
+                
+                
+                
+            # combined_matrix[i] = [val / pivot for val in combined_matrix[i]]
+            # for j in range(len_matrix):
+            #     if j != i:
+            #         factor = combined_matrix[j][i]
+            #         combined_matrix[j] = [ a - factor * b for a, b in zip(combined_matrix[j], combined_matrix[i])]
+            
+            for row_elm in range(len_matrix):
+                if row_elm !=i :
+                    rasio = combined_matrix[row_elm][i]
+                    for col in range(len(combined_matrix[row_elm])):
+                        combined_matrix[row_elm][col] -= rasio * combined_matrix[i][col]
+            
+            sm_matrix = SetMatrix.matrix(combined_matrix)
+            
+            if mode == "print":
+                half = len(container_result[0]) // 2
+                left = container_result[0][:half]
+                right = container_result[0][half:]
+                
+                for a, b in zip(left, right):
+                    print(f"{a:<70}     {b:<40}")
+                    # print(f"{" "*10}".join(result))
+                    
+            # for a, b in zip(*container_result):
+            #     print(f"{a} = {b}")
+            print(f"[bold dark_slate_gray1]Diperoleh baris {i+1} baru : [/bold dark_slate_gray1]")
+            SetMatrix.printMatrix(SetMatrix.matrix([combined_matrix[i]]), type="frc")
+            print()
+            
+            SetMatrix.printMatrix(sm_matrix, type="frc", header=True)
+            print()
+            
+
+        inverse = SetMatrix.matrix([row[len_matrix:] for row in combined_matrix])
+        print(f"[bold red1]<== INVERS ==>[/bold red1]")
+        SetMatrix.printMatrix(inverse)
+        # inverse = [list(map(float, row)) for row in inverse]
+        return inverse
     
 
 """
@@ -112,7 +211,7 @@ class adjoin:
     
     def inv(self, *, mtr:"SetMatrix" = None) -> "SetMatrix":
         
-        matrix = self.__obj_matrix if mtr is None else mtr
+        matrix = self.__obj_matrix if mtr == None else mtr
         
         if not isinstance(matrix, SetMatrix):
             raise TypeError("Parameter harus berupa SetMatrix")    
@@ -368,9 +467,18 @@ class SetMatrix:
         <==== KUMPULAN METHOD DARI CLASS ===>
     """
     
+    @staticmethod
+    def identity(size:int):
+        """MENYIAPKAN MATRIX IDENTITY"""
+        matrix = [[0 for i in range(size)] for _ in range(size)]
+        for i in range(size):
+            matrix[i][i] = 1
+            
+        return matrix
+    
     """METHOD UNTUK PRINT MATRIX DENGAN PARAMETER ARGS"""
     @staticmethod
-    def printMatrix(*args, mode:str = None):
+    def printMatrix(*args, type:str = None, header:bool = False):
         """ 
             CEK APAKAH ARGUMEN YANG DIBERIKAN ADALAH OBJEK DARI SETMATRIX
         """
@@ -402,7 +510,7 @@ class SetMatrix:
                 for j in range (col):
                     if i < row:
                         value_matrix:float = float(matrix.tolist[i][j])
-                        if mode == "frc" :
+                        if type == "frc" :
                             if value_matrix.is_integer():
                                 row_data.append(str(value_matrix))
                             else:
@@ -421,7 +529,7 @@ class SetMatrix:
                 MEMBUAT TABEL MATRIX DENGAN TABULATE YANG 
                 KEMUDIAN DI SETOR KE CONTAINER MATRIX
             """
-            if mode == "frc":
+            if type == "frc":
                 table_matrix = tabulate(new_matrix, tablefmt="grid", floatfmt=".1f").split("\n")
             else:
                 table_matrix = tabulate(new_matrix, tablefmt="grid").split("\n")
@@ -430,8 +538,9 @@ class SetMatrix:
             
             """MENAMBAHKAN HEADER PADA TABEL MATRIX
             """
-            table_matrix.insert(0, "[bold green1]Matrix[/bold green1]" + ws + " " if len(matrix.tolist) >=3 
-                                else "[bold green1]Minor[/bold green1]" + ws) 
+            if type != "com" and header:
+                table_matrix.insert(0, "[bold green1]Matrix[/bold green1]" + ws + " " if len(matrix.tolist) >=3 
+                                    else "[bold green1]Minor[/bold green1]" + ws) 
             container_matrix.append(table_matrix)
 
         #keluar loop
@@ -455,10 +564,31 @@ class SetMatrix:
                         for k in range(j, leng):
                             container_matrix[i][k] = " " * len(container_matrix[i][1])
                         break
+        
+        if type == "com":
+            # print(container_matrix[0][0])
+            # print(len_col)
+            
+            for i in range (len_container):
+                len_row = len(container_matrix[i])
+                for j in range(len_row):
+                    row = container_matrix[i][j]
+                    row_list = list(row)
+                    len_col = len(row_list)
+                    # if j == 0 or j == len_row-1:
+                    #     row_list[len_col-1]= "-"
+                    if i == 0:
+                        row_list[len_col-1] = "|" if j != 0 and j != len_row-1 else row_list[len_col-1]
+                    if i != 0:
+                        row_list[0] = ""
+                    row = ''.join(row_list)
+                    container_matrix[i][j] = row
+            
+
         # print([row for row in zip(*container_matrix)])
         # print(container_matrix)
         """ PRINT MATRIX """
-        combined_table = ["   ".join(row_matrix) for row_matrix in zip(*container_matrix)]
+        combined_table = ["".join(row_matrix) for row_matrix in zip(*container_matrix)] if type == "com" else ["  ".join(row_matrix) for row_matrix in zip(*container_matrix)]
         combined_table = "\n".join(combined_table)
         print(f"[bold]{combined_table}[bold]")
 
